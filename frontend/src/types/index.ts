@@ -1,0 +1,159 @@
+// ─── Enums / Union Types ──────────────────────────────────────────────────────
+export type CertificateType =
+  | 'birth'
+  | 'citizenship'
+  | 'residence'
+  | 'marriage'
+  | 'death'
+  | 'income'
+  | 'character';
+
+export type ApplicationStatus =
+  | 'draft'
+  | 'pending'
+  | 'under_review'
+  | 'approved'
+  | 'rejected';
+
+export type UserRole = 'user' | 'admin';
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+export interface User {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  address?: string;
+  citizenshipNumber?: string;
+  role: UserRole;
+  profilePhoto?: string;
+  isActive: boolean;
+  lastLogin?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// ─── Auth State ───────────────────────────────────────────────────────────────
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}
+
+// ─── Application ──────────────────────────────────────────────────────────────
+export interface ApplicantDetails {
+  fullName: string;
+  dateOfBirth?: string;
+  gender?: 'male' | 'female' | 'other';
+  fatherName?: string;
+  motherName?: string;
+  grandfatherName?: string;
+  permanentAddress?: string;
+  temporaryAddress?: string;
+  wardNumber?: string;
+  municipalityName?: string;
+  districtName?: string;
+  province?:
+    | 'Koshi'
+    | 'Madhesh'
+    | 'Bagmati'
+    | 'Gandaki'
+    | 'Lumbini'
+    | 'Karnali'
+    | 'Sudurpashchim';
+}
+
+export interface UploadedDocument {
+  documentType: string;
+  cloudinaryUrl: string;
+  publicId: string;
+  fileName: string;
+  fileSize?: number;
+  uploadedAt: string;
+}
+
+export interface Application {
+  _id: string;
+  applicationNumber: string;
+  userId: string | User;
+  certificateType: CertificateType;
+  status: ApplicationStatus;
+  priority: 'normal' | 'urgent';
+  applicantDetails: ApplicantDetails;
+  uploadedDocuments: UploadedDocument[];
+  adminRemarks?: string;
+  rejectionReason?: string;
+  reviewedBy?: string | User;
+  reviewedAt?: string;
+  estimatedCompletionDate?: string;
+  smartFormData?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Certificate ──────────────────────────────────────────────────────────────
+export interface Certificate {
+  _id: string;
+  certificateNumber: string;
+  applicationId: string | Application;
+  userId: string | User;
+  certificateType: CertificateType;
+  issuedDate: string;
+  expiryDate: string;
+  pdfUrl?: string;
+  qrCodeUrl?: string;
+  qrCodeData?: string;
+  isValid: boolean;
+  revokedAt?: string;
+  revokedReason?: string;
+  downloadCount: number;
+  createdAt: string;
+}
+
+// ─── API Response ─────────────────────────────────────────────────────────────
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  token?: string;
+}
+
+// ─── Dashboard Stats ──────────────────────────────────────────────────────────
+export interface DashboardStats {
+  total: number;
+  pending: number;
+  under_review: number;
+  approved: number;
+  rejected: number;
+  thisMonth: number;
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationInfo;
+}
+
+// ─── Register / Login payloads ────────────────────────────────────────────────
+export interface RegisterPayload {
+  fullName: string;
+  email: string;
+  password: string;
+  phone: string;
+  address?: string;
+  citizenshipNumber?: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}

@@ -1,0 +1,327 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { applicationAPI } from '../../services/api';
+import type { Application } from '../../types';
+import StatusBadge from '../../components/common/StatusBadge';
+import Loader from '../../components/common/Loader';
+import { CERTIFICATE_TYPES } from '../../components/user/ApplicationForm/CertificateTypeSelector';
+
+// ─── Timeline Step ────────────────────────────────────────────────────────────
+interface TimelineStepProps {
+  icon: string;
+  label: string;
+  sublabel?: string;
+  done: boolean;
+  active: boolean;
+  isLast?: boolean;
+}
+
+const TimelineStep: React.FC<TimelineStepProps> = ({
+  icon, label, sublabel, done, active, isLast,
+}) => (
+  <div className="flex gap-4 relative">
+    {/* Connector */}
+    {!isLast && (
+      <div className="absolute left-5 top-11 bottom-0 w-0.5 bg-slate-700" />
+    )}
+    {/* Circle */}
+    <div
+      className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm
+                   z-10 relative flex-shrink-0 transition-all
+                   ${done
+                     ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                     : active
+                     ? 'border-primary-500 bg-primary-500/20 text-primary-400 shadow-glow-blue animate-pulse'
+                     : 'border-slate-600 bg-slate-800 text-slate-500'
+                   }`}
+    >
+      {done ? '✓' : icon}
+    </div>
+    {/* Text */}
+    <div className="pb-8">
+      <p className={`font-semibold text-sm ${done ? 'text-emerald-400' : active ? 'text-white' : 'text-slate-500'}`}>
+        {label}
+      </p>
+      {sublabel && (
+        <p className="text-slate-500 text-xs mt-0.5">{sublabel}</p>
+      )}
+    </div>
+  </div>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+const ApplicationDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const justCreated = location.state?.justCreated;
+
+  const [application, setApplication] = useState<Application | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchApp = async () => {
+      try {
+        const res = await applicationAPI.getById(id);
+        if (res.data.success) setApplication(res.data.data?.application || null);
+        else setError('Application not found.');
+      } catch {
+        setError('Failed to load application.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchApp();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <Loader size="md" text="Loading application..." />
+      </div>
+    );
+  }
+
+  if (error || !application) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="glass-card-dark p-10 text-center max-w-sm">
+          <p className="text-5xl mb-4">❌</p>
+          <p className="text-red-400 mb-4">{error || 'Not found'}</p>
+          <Link to="/applications" className="btn-primary">Back to Applications</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const ct = CERTIFICATE_TYPES.find((c) => c.id === application.certificateType);
+  const ad = application.applicantDetails;
+  const isApproved = application.status === 'approved';
+  const isRejected = application.status === 'rejected';
+
+  const timelineSteps = [
+    {
+      icon: '📤',
+      label: 'Application Submitted',
+      sublabel: new Date(application.createdAt).toLocaleString('en-NP'),
+      done: true,
+      active: false,
+    },
+    {
+      icon: '⏳',
+      label: 'Pending Review',
+      sublabel: 'Waiting for admin to pick up',
+      done: ['under_review', 'approved', 'rejected'].includes(application.status),
+      active: application.status === 'pending',
+    },
+    {
+      icon: '🔍',
+      label: 'Under Review',
+      sublabel: application.reviewedAt
+        ? `Reviewed on ${new Date(application.reviewedAt).toLocaleDateString('en-NP')}`
+        : 'Your documents are being verified',
+      done: ['approved', 'rejected'].includes(application.status),
+      active: application.status === 'under_review',
+    },
+    {
+      icon: isApproved ? '✅' : isRejected ? '❌' : '🎯',
+      label: isRejected ? 'Application Rejected' : 'Application Approved',
+      sublabel: isApproved
+        ? 'Certificate is ready'
+        : isRejected
+        ? application.rejectionReason
+        : 'Pending decision',
+      done: isApproved || isRejected,
+      active: false,
+    },
+  ];
+
+  const detailFields = [
+    { label: 'Full Name', value: ad?.fullName },
+    { label: 'Date of Birth', value: ad?.dateOfBirth ? new Date(ad.dateOfBirth).toLocaleDateString() : '' },
+    { label: 'Gender', value: ad?.gender },
+    { label: "Father's Name", value: ad?.fatherName },
+    { label: "Mother's Name", value: ad?.motherName },
+    { label: "Grandfather's Name", value: ad?.grandfatherName },
+    { label: 'Ward Number', value: ad?.wardNumber },
+    { label: 'Municipality', value: ad?.municipalityName },
+    { label: 'District', value: ad?.districtName },
+    { label: 'Province', value: ad?.province },
+    { label: 'Permanent Address', value: ad?.permanentAddress },
+    { label: 'Temporary Address', value: ad?.temporaryAddress },
+    // Type-specific
+    { label: 'Birth Place', value: (ad as any)?.birthPlace },
+    { label: 'Spouse Name', value: (ad as any)?.spouseName },
+    { label: 'Marriage Date', value: (ad as any)?.marriageDate },
+    { label: 'Deceased Name', value: (ad as any)?.deceasedName },
+    { label: 'Death Date', value: (ad as any)?.deathDate },
+    { label: 'Occupation', value: (ad as any)?.occupation },
+    { label: 'Annual Income', value: (ad as any)?.annualIncome ? `NPR ${(ad as any).annualIncome}` : '' },
+  ].filter((f) => f.value);
+
+  return (
+    <div className="min-h-screen bg-slate-950 py-8 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+
+        {/* Success Banner */}
+        {justCreated && (
+          <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-2xl px-5 py-4 mb-6 animate-fade-in flex gap-3">
+            <span className="text-2xl">🎉</span>
+            <div>
+              <p className="text-emerald-400 font-semibold">Application Submitted Successfully!</p>
+              <p className="text-emerald-300/70 text-sm">We'll notify you on status changes.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-6 text-sm">
+          <Link to="/applications" className="text-slate-400 hover:text-white transition-colors">
+            ← My Applications
+          </Link>
+          <span className="text-slate-600">/</span>
+          <span className="text-slate-300">{application.applicationNumber}</span>
+        </div>
+
+        {/* Header Card */}
+        <div className="glass-card-dark p-6 mb-5">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gov-gradient flex items-center justify-center text-3xl flex-shrink-0">
+                {ct?.icon || '📋'}
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">{application.applicationNumber}</h1>
+                <p className="text-slate-400 text-sm capitalize mt-0.5">
+                  {application.certificateType} Certificate
+                  {application.priority === 'urgent' && (
+                    <span className="ml-2 text-amber-400 font-medium">⚡ Urgent</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <StatusBadge status={application.status} />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { label: 'Submitted', value: new Date(application.createdAt).toLocaleDateString('en-NP') },
+              { label: 'Est. Completion', value: application.estimatedCompletionDate ? new Date(application.estimatedCompletionDate).toLocaleDateString('en-NP') : 'TBD' },
+              { label: 'Documents', value: `${application.uploadedDocuments?.length || 0} file(s)` },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-slate-800/50 rounded-xl p-3">
+                <p className="text-slate-500 text-xs mb-1">{label}</p>
+                <p className="text-white text-sm font-medium">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+          {/* Timeline */}
+          <div className="glass-card-dark p-6">
+            <h2 className="text-base font-bold text-white mb-5">📊 Status Timeline</h2>
+            {timelineSteps.map((step, i) => (
+              <TimelineStep
+                key={i}
+                {...step}
+                isLast={i === timelineSteps.length - 1}
+              />
+            ))}
+          </div>
+
+          {/* Applicant Details */}
+          <div className="lg:col-span-2 glass-card-dark p-6">
+            <h2 className="text-base font-bold text-white mb-5">👤 Applicant Details</h2>
+            {detailFields.length === 0 ? (
+              <p className="text-slate-500 text-sm italic">No details provided</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {detailFields.map(({ label, value }) => (
+                  <div key={label} className="bg-slate-800/40 rounded-xl p-3">
+                    <p className="text-slate-500 text-xs mb-0.5">{label}</p>
+                    <p className="text-white text-sm capitalize">{value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Uploaded Documents */}
+        {(application.uploadedDocuments?.length ?? 0) > 0 && (
+          <div className="glass-card-dark p-6 mb-5">
+            <h2 className="text-base font-bold text-white mb-4">📎 Uploaded Documents</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {application.uploadedDocuments.map((doc, i) => (
+                <a
+                  key={i}
+                  href={doc.cloudinaryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block rounded-xl overflow-hidden border border-slate-700/40
+                             bg-slate-800/40 hover:border-primary-600/40 transition-all"
+                >
+                  <div className="h-20 bg-slate-700 flex items-center justify-center text-3xl">
+                    {doc.cloudinaryUrl.includes('.pdf') ? '📄' : '🖼️'}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-white text-xs font-medium truncate">{doc.documentType}</p>
+                    <p className="text-slate-500 text-xs truncate">{doc.fileName}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Rejection Reason */}
+        {isRejected && application.rejectionReason && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-5 mb-5">
+            <h3 className="text-red-400 font-semibold mb-2 flex items-center gap-2">
+              ❌ Rejection Reason
+            </h3>
+            <p className="text-slate-300 text-sm">{application.rejectionReason}</p>
+            {application.adminRemarks && (
+              <p className="text-slate-400 text-xs mt-2 border-t border-red-500/20 pt-2">
+                Remarks: {application.adminRemarks}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Admin Remarks (non-rejected) */}
+        {!isRejected && application.adminRemarks && (
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-5 mb-5">
+            <h3 className="text-blue-400 font-semibold mb-2">💬 Admin Remarks</h3>
+            <p className="text-slate-300 text-sm">{application.adminRemarks}</p>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3">
+          {isApproved && (
+            <Link to="/certificates" className="btn-secondary py-3 px-6 flex items-center gap-2">
+              ⬇️ View Certificate
+            </Link>
+          )}
+          {isRejected && (
+            <button
+              onClick={() => navigate('/apply', { state: { resubmit: application } })}
+              className="btn-primary py-3 px-6"
+            >
+              🔄 Resubmit Application
+            </button>
+          )}
+          <Link to="/applications" className="btn-ghost py-3 px-6">
+            ← Back
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ApplicationDetail;
