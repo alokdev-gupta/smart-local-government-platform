@@ -210,7 +210,7 @@ const Home: React.FC = () => {
             <span className="font-bold text-white">Smart Gov Nepal</span>
           </div>
           <p className="text-slate-500 text-sm">
-            © 2024 Government of Nepal — Smart Local Government Platform. All rights reserved.
+            © 2026 Government of Nepal — Smart Local Government Platform. All rights reserved.
           </p>
           <div className="flex gap-6 justify-center mt-4">
             <Link to="/terms" className="text-slate-500 hover:text-slate-300 text-xs transition-colors">Terms</Link>
