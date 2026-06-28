@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const Navbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -14,6 +17,7 @@ const Navbar: React.FC = () => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
+        setShowNotifications(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -67,10 +71,11 @@ const Navbar: React.FC = () => {
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gov-gradient flex items-center justify-center
-                            shadow-glow-blue group-hover:scale-105 transition-transform">
-              <span className="text-lg">🇳🇵</span>
-            </div>
+            <img 
+              src="/Emblem_of_Nepal.svg.png" 
+              alt="Emblem of Nepal" 
+              className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" 
+            />
             <div>
               <div className="font-bold text-white text-sm leading-none font-nepali">
                 स्मार्ट सरकार

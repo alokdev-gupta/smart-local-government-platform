@@ -1,6 +1,7 @@
 const Application = require('../models/Application');
 const Certificate = require('../models/Certificate');
 const User = require('../models/User');
+const { validateApplicationData } = require('../services/smartValidationService');
 
 // ─── Helper: build applicationNumber ─────────────────────────────────────────
 const generateAppNumber = async () => {
@@ -230,7 +231,27 @@ const uploadDocument = async (req, res, next) => {
   }
 };
 
-// ─── 7. GET /api/admin/applications ──────────────────────────────────────────
+// ─── 7. POST /api/applications/validate ───────────────────────────────────────
+const validateApplication = async (req, res, next) => {
+  try {
+    const { certificateType, applicantDetails, uploadedDocuments } = req.body;
+    
+    if (!certificateType || !applicantDetails) {
+      return res.status(400).json({ success: false, message: 'Missing required data for validation.' });
+    }
+
+    const validationResult = validateApplicationData(certificateType, applicantDetails, uploadedDocuments || []);
+    
+    res.status(200).json({
+      success: true,
+      data: validationResult
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── 8. GET /api/admin/applications ──────────────────────────────────────────
 const getAllApplicationsAdmin = async (req, res, next) => {
   try {
     const { status, certificateType, priority, page = 1, limit = 20 } = req.query;
@@ -266,7 +287,7 @@ const getAllApplicationsAdmin = async (req, res, next) => {
   }
 };
 
-// ─── 8. PUT /api/admin/applications/:id/approve ───────────────────────────────
+// ─── 9. PUT /api/admin/applications/:id/approve ───────────────────────────────
 const approveApplication = async (req, res, next) => {
   try {
     const { adminRemarks } = req.body;
@@ -302,7 +323,7 @@ const approveApplication = async (req, res, next) => {
   }
 };
 
-// ─── 9. PUT /api/admin/applications/:id/reject ────────────────────────────────
+// ─── 10. PUT /api/admin/applications/:id/reject ────────────────────────────────
 const rejectApplication = async (req, res, next) => {
   try {
     const { rejectionReason, adminRemarks } = req.body;
@@ -328,7 +349,7 @@ const rejectApplication = async (req, res, next) => {
   }
 };
 
-// ─── 10. GET /api/admin/stats ─────────────────────────────────────────────────
+// ─── 11. GET /api/admin/stats ─────────────────────────────────────────────────
 const getDashboardStats = async (req, res, next) => {
   try {
     const startOfMonth = new Date();
@@ -356,7 +377,7 @@ const getDashboardStats = async (req, res, next) => {
   }
 };
 
-// ─── 11. GET /api/admin/users ─────────────────────────────────────────────────
+// ─── 12. GET /api/admin/users ─────────────────────────────────────────────────
 const getAllUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, role } = req.query;
@@ -375,7 +396,7 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-// ─── 12. GET /api/certificates/my ─────────────────────────────────────────────
+// ─── 13. GET /api/certificates/my ─────────────────────────────────────────────
 const getMyCertificates = async (req, res, next) => {
   try {
     const certificates = await Certificate.find({ userId: req.user._id })
@@ -387,7 +408,7 @@ const getMyCertificates = async (req, res, next) => {
   }
 };
 
-// ─── 13. GET /api/certificates/verify/:certNumber ─────────────────────────────
+// ─── 14. GET /api/certificates/verify/:certNumber ─────────────────────────────
 const verifyCertificate = async (req, res, next) => {
   try {
     const { certNumber } = req.params;
@@ -420,6 +441,7 @@ module.exports = {
   updateApplication,
   deleteApplication,
   uploadDocument,
+  validateApplication,
   getAllApplicationsAdmin,
   approveApplication,
   rejectApplication,

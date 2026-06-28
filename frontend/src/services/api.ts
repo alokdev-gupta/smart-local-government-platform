@@ -84,9 +84,12 @@ export const applicationAPI = {
     api.delete<ApiResponse>(`/applications/${id}`),
 
   uploadDocument: (id: string, formData: FormData) =>
-    api.post<ApiResponse<{ application: Application }>>(`/applications/${id}/documents`, formData, {
+    api.post<ApiResponse<{ document: any }>>(`/applications/${id}/documents`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+
+  validateApplication: (id: string, data: { certificateType: string; applicantDetails: any; uploadedDocuments?: any[] }) =>
+    api.post<ApiResponse<import('../types').ValidationResult>>(`/applications/validate`, data),
 };
 
 
@@ -96,50 +99,83 @@ export const adminAPI = {
     status?: string;
     certificateType?: string;
     priority?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }) =>
     api.get<ApiResponse<{ applications: Application[]; pagination: unknown }>>(
-      '/applications/admin/all-applications',
+      '/admin/applications',
       { params }
     ),
 
   approveApplication: (id: string, data?: { adminRemarks?: string }) =>
-    api.put<ApiResponse<{ application: Application; certificate: Certificate }>>(
-      `/applications/admin/applications/${id}/approve`,
+    api.put<ApiResponse<{ application: Application; certificate: Certificate; pdfUrl: string }>>(
+      `/admin/applications/${id}/approve`,
       data
     ),
 
   rejectApplication: (id: string, data: { rejectionReason: string; adminRemarks?: string }) =>
     api.put<ApiResponse<{ application: Application }>>(
-      `/applications/admin/applications/${id}/reject`,
+      `/admin/applications/${id}/reject`,
       data
     ),
 
-  getStats: () =>
-    api.get<ApiResponse<{ stats: DashboardStats; totalUsers: number; totalCerts: number }>>(
-      '/applications/admin/stats'
+  setUnderReview: (id: string) =>
+    api.put<ApiResponse<{ application: Application }>>(
+      `/admin/applications/${id}/review`
     ),
 
-  getAllUsers: (params?: { role?: string; page?: number; limit?: number }) =>
+  getStats: () =>
+    api.get<ApiResponse<{ 
+      stats: DashboardStats; 
+      totalUsers: number; 
+      totalCerts: number;
+      recentActivity?: any[];
+      certTypeDistribution?: any[];
+      avgProcessingDays?: number;
+    }>>('/admin/stats'),
+
+  getAllUsers: (params?: { role?: string; isActive?: string | boolean; search?: string; page?: number; limit?: number }) =>
     api.get<ApiResponse<{ users: User[]; pagination: unknown }>>(
-      '/applications/admin/users',
+      '/admin/users',
       { params }
+    ),
+    
+  toggleUserStatus: (id: string) =>
+    api.put<ApiResponse<{ user: User }>>(
+      `/admin/users/${id}/toggle-status`
     ),
 };
 
 // ─── Certificate API ──────────────────────────────────────────────────────────
 export const certificateAPI = {
   getAll: () =>
-    api.get<ApiResponse<{ certificates: Certificate[] }>>('/applications/certificates/my'),
+    api.get<ApiResponse<{ certificates: Certificate[] }>>('/certificates'),
 
-  download: (certNumber: string) =>
-    api.get(`/certificates/${certNumber}/download`, { responseType: 'blob' }),
+  download: (id: string) =>
+    api.get<ApiResponse<{ pdfUrl: string; certificateNumber: string }>>(`/certificates/${id}/download`),
 
   verify: (certNumber: string) =>
-    api.get<ApiResponse<{ certificate: Certificate; isExpired: boolean; status: string }>>(
-      `/applications/certificates/verify/${certNumber}`
+    api.get<ApiResponse<{ certificateNumber?: string; holderName?: string; certificateType?: string; issuedDate?: string; expiryDate?: string; isValid: boolean; message?: string; revokedReason?: string }>>(
+      `/certificates/verify/${certNumber}`
     ),
+};
+
+// ─── Notification API ─────────────────────────────────────────────────────────
+export const notificationAPI = {
+  getAll: () =>
+    api.get<ApiResponse<{ notifications: import('../types').Notification[] }>>('/notifications'),
+
+  getUnreadCount: () =>
+    api.get<ApiResponse<{ count: number }>>('/notifications/unread-count'),
+
+  markAsRead: (id: string) =>
+    api.put<ApiResponse<{ notification: import('../types').Notification }>>(`/notifications/${id}/read`),
+
+  markAllAsRead: () =>
+    api.put<ApiResponse<{ message: string }>>('/notifications/mark-all-read'),
 };
 
 export default api;

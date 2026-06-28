@@ -9,6 +9,9 @@ const { connectDB } = require('./config/db');
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const certificateRoutes = require('./routes/certificateRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
@@ -82,8 +85,9 @@ app.get('/health', (req, res) => {
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/applications', applicationRoutes);
-// Admin endpoints are nested inside applicationRoutes at /applications/admin/*
-// Certificate endpoints are nested at /applications/certificates/*
+app.use('/api/admin', adminRoutes);
+app.use('/api/certificates', certificateRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -133,12 +137,35 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
+// ─── Socket.IO Setup ────────────────────────────────────────────────────────
+const { Server } = require('socket.io');
+const httpServer = require('http').createServer(app);
+const io = new Server(httpServer, { 
+  cors: { 
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST']
+  } 
+});
+
+io.on('connection', (socket) => {
+  console.log(`Socket connected: ${socket.id}`);
+  
+  socket.on('join_user_room', (userId) => {
+    socket.join(`user_${userId}`);
+    console.log(`Socket ${socket.id} joined room user_${userId}`);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log(`Socket disconnected: ${socket.id}`);
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log('='.repeat(60));
       console.log(`🇳🇵  Smart Local Government Platform API`);
       console.log(`🚀  Server running on port ${PORT}`);

@@ -5,6 +5,7 @@ import type { Application } from '../../types';
 import StatusBadge from '../../components/common/StatusBadge';
 import Loader from '../../components/common/Loader';
 import { CERTIFICATE_TYPES } from '../../components/user/ApplicationForm/CertificateTypeSelector';
+import { useSocket } from '../../hooks/useSocket';
 
 // ─── Timeline Step ────────────────────────────────────────────────────────────
 interface TimelineStepProps {
@@ -60,6 +61,9 @@ const ApplicationDetail: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Real-time WebSocket hook
+  const { lastUpdate } = useSocket();
+
   useEffect(() => {
     if (!id) return;
     const fetchApp = async () => {
@@ -75,6 +79,13 @@ const ApplicationDetail: React.FC = () => {
     };
     fetchApp();
   }, [id]);
+
+  // Listen for socket updates targeting this specific application
+  useEffect(() => {
+    if (lastUpdate && application && lastUpdate.applicationId === application._id) {
+      setApplication(prev => prev ? { ...prev, status: lastUpdate.status } : null);
+    }
+  }, [lastUpdate, application?._id]);
 
   if (isLoading) {
     return (
@@ -173,6 +184,14 @@ const ApplicationDetail: React.FC = () => {
               <p className="text-emerald-400 font-semibold">Application Submitted Successfully!</p>
               <p className="text-emerald-300/70 text-sm">We'll notify you on status changes.</p>
             </div>
+          </div>
+        )}
+
+        {/* Real-time status update flash banner */}
+        {lastUpdate && lastUpdate.applicationId === application._id && (
+          <div className="bg-blue-500/10 border border-blue-500/30 text-blue-400 px-4 py-3 rounded-xl flex items-center gap-3 mb-6 animate-pulse">
+            <span className="text-xl">⚡</span>
+            <p className="font-medium text-sm">Update: {lastUpdate.message}</p>
           </div>
         )}
 

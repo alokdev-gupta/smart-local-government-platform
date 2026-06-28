@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './components/ui/Toast';
 import Navbar from './components/common/Navbar';
 import PrivateRoute from './components/common/PrivateRoute';
 import AdminRoute from './components/common/AdminRoute';
@@ -28,53 +29,55 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <div className="min-h-screen bg-slate-950 flex flex-col">
-          <Navbar />
-          <main className="flex-1">
-            <Routes>
-              {/* ── Public ──────────────────────────────────────────────────── */}
-              <Route path="/"                       element={<Home />} />
-              <Route path="/login"                  element={<Login />} />
-              <Route path="/register"               element={<Register />} />
-              <Route path="/verify/:certNumber"     element={<VerifyCertificate />} />
+        <ToastProvider>
+          <div className="min-h-screen bg-slate-950 flex flex-col">
+            <Navbar />
+            <main className="flex-1">
+              <Routes>
+                {/* ── Public ──────────────────────────────────────────────────── */}
+                <Route path="/"                       element={<Home />} />
+                <Route path="/login"                  element={<Login />} />
+                <Route path="/register"               element={<Register />} />
+                <Route path="/verify/:certNumber"     element={<VerifyCertificate />} />
 
-              {/* ── Protected User ───────────────────────────────────────────── */}
-              <Route element={<PrivateRoute />}>
-                <Route path="/dashboard"             element={<UserDashboard />} />
-                <Route path="/apply"                 element={<ApplyCertificate />} />
-                <Route path="/applications"          element={<MyApplications />} />
-                <Route path="/applications/:id"      element={<ApplicationDetail />} />
-                <Route path="/certificates"          element={<MyCertificates />} />
-                <Route path="/profile"               element={<Profile />} />
-              </Route>
+                {/* ── Protected User ───────────────────────────────────────────── */}
+                <Route element={<PrivateRoute />}>
+                  <Route path="/dashboard"             element={<UserDashboard />} />
+                  <Route path="/apply"                 element={<ApplyCertificate />} />
+                  <Route path="/applications"          element={<MyApplications />} />
+                  <Route path="/applications/:id"      element={<ApplicationDetail />} />
+                  <Route path="/certificates"          element={<MyCertificates />} />
+                  <Route path="/profile"               element={<Profile />} />
+                </Route>
 
-              {/* ── Protected Admin ──────────────────────────────────────────── */}
-              <Route element={<AdminRoute />}>
-                <Route path="/admin"                        element={<AdminDashboard />} />
-                <Route path="/admin/applications"           element={<AllApplications />} />
-                <Route path="/admin/applications/:id"       element={<AdminApplicationDetail />} />
-                <Route path="/admin/users"                  element={<ManageUsers />} />
-              </Route>
+                {/* ── Protected Admin ──────────────────────────────────────────── */}
+                <Route element={<AdminRoute />}>
+                  <Route path="/admin"                        element={<AdminDashboard />} />
+                  <Route path="/admin/applications"           element={<AllApplications />} />
+                  <Route path="/admin/applications/:id"       element={<AdminApplicationDetail />} />
+                  <Route path="/admin/users"                  element={<ManageUsers />} />
+                </Route>
 
-              {/* ── 404 ─────────────────────────────────────────────────────── */}
-              <Route
-                path="*"
-                element={
-                  <div className="min-h-screen flex items-center justify-center bg-slate-950">
-                    <div className="text-center animate-fade-in">
-                      <p className="text-8xl mb-6">🇳🇵</p>
-                      <h1 className="text-6xl font-extrabold text-gradient mb-4">404</h1>
-                      <p className="text-slate-400 text-xl mb-8">Page not found</p>
-                      <a href="/" className="btn-primary py-3 px-8 inline-block">
-                        ← Go to Home
-                      </a>
+                {/* ── 404 ─────────────────────────────────────────────────────── */}
+                <Route
+                  path="*"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-slate-950">
+                      <div className="text-center animate-fade-in">
+                        <p className="text-8xl mb-6">🇳🇵</p>
+                        <h1 className="text-6xl font-extrabold text-gradient mb-4">404</h1>
+                        <p className="text-slate-400 text-xl mb-8">Page not found</p>
+                        <a href="/" className="btn-primary py-3 px-8 inline-block">
+                          ← Go to Home
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                }
-              />
-            </Routes>
-          </main>
-        </div>
+                  }
+                />
+              </Routes>
+            </main>
+          </div>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );

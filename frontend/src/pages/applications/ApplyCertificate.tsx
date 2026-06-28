@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { applicationAPI } from '../../services/api';
 import type { CertificateType } from '../../types';
 import { AxiosError } from 'axios';
+import { useAuth } from '../../hooks/useAuth';
+import { SmartFormHelper } from '../../components/smart/SmartFormHelper';
+import { AutoFillBanner } from '../../components/smart/AutoFillBanner';
+import { ProcessingTimeEstimate } from '../../components/smart/ProcessingTimeEstimate';
 
 const CERT_TYPES: { id: CertificateType; icon: string; label: string; desc: string }[] = [
   { id: 'birth', icon: '👶', label: 'Birth Certificate', desc: 'For newborn registration' },
@@ -18,6 +22,7 @@ const PROVINCES = ['Koshi', 'Madhesh', 'Bagmati', 'Gandaki', 'Lumbini', 'Karnali
 
 const ApplyCertificate: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const defaultType = (searchParams.get('type') || '') as CertificateType | '';
 
@@ -26,6 +31,8 @@ const ApplyCertificate: React.FC = () => {
   const [priority, setPriority] = useState<'normal' | 'urgent'>('normal');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [previousAppDetails, setPreviousAppDetails] = useState<any>(null);
+
   const [formData, setFormData] = useState({
     fullName: '',
     dateOfBirth: '',
@@ -40,6 +47,18 @@ const ApplyCertificate: React.FC = () => {
     districtName: '',
     province: '',
   });
+
+  useEffect(() => {
+    const fetchPrevious = async () => {
+      try {
+        const res = await applicationAPI.getAll();
+        if (res.data.success && res.data.data.applications.length > 0) {
+          setPreviousAppDetails(res.data.data.applications[0].applicantDetails);
+        }
+      } catch (err) {}
+    };
+    fetchPrevious();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -83,13 +102,11 @@ const ApplyCertificate: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 py-8 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white">📝 Apply for Certificate</h1>
           <p className="text-slate-400 text-sm mt-1">Complete the form to submit your application</p>
         </div>
 
-        {/* Progress Steps */}
         <div className="flex items-center gap-3 mb-8">
           {[
             { n: 1, label: 'Select Type' },
@@ -113,7 +130,6 @@ const ApplyCertificate: React.FC = () => {
           ))}
         </div>
 
-        {/* Step 1: Choose Type */}
         {step === 1 && (
           <div className="animate-fade-in">
             <div className="glass-card-dark p-6 mb-4">
@@ -142,7 +158,6 @@ const ApplyCertificate: React.FC = () => {
               </div>
             </div>
 
-            {/* Priority */}
             <div className="glass-card-dark p-5 mb-5">
               <h3 className="text-sm font-semibold text-white mb-3">Processing Priority</h3>
               <div className="flex gap-3">
@@ -161,11 +176,11 @@ const ApplyCertificate: React.FC = () => {
                   </button>
                 ))}
               </div>
-              {priority === 'urgent' && (
-                <p className="text-amber-400/70 text-xs mt-2">
-                  ⚡ Urgent applications are processed within 2-3 business days (additional fee may apply)
-                </p>
-              )}
+              <ProcessingTimeEstimate 
+                  certificateType={selectedType || 'birth'} 
+                  priority={priority}
+                  onUpgradeToUrgent={() => setPriority('urgent')}
+              />
             </div>
 
             <button
@@ -178,7 +193,6 @@ const ApplyCertificate: React.FC = () => {
           </div>
         )}
 
-        {/* Step 2: Fill Details */}
         {step === 2 && (
           <div className="animate-fade-in">
             <div className="glass-card-dark p-6">
@@ -200,6 +214,13 @@ const ApplyCertificate: React.FC = () => {
                   <p className="text-red-400 text-sm">{error}</p>
                 </div>
               )}
+
+              <AutoFillBanner 
+                previousData={previousAppDetails} 
+                onAutoFill={(data) => {
+                  setFormData(prev => ({ ...prev, ...data }));
+                }} 
+              />
 
               <form id="apply-form" onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -275,6 +296,12 @@ const ApplyCertificate: React.FC = () => {
                     className="form-input resize-none" rows={2} placeholder="Current residence address"
                     disabled={isLoading} />
                 </div>
+
+                <SmartFormHelper 
+                  certificateType={selectedType || ''}
+                  applicantDetails={formData}
+                  uploadedDocuments={[]}
+                />
 
                 <button
                   id="apply-submit-btn"

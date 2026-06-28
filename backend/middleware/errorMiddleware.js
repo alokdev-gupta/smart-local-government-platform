@@ -1,71 +1,48 @@
 /**
  * Global Error Handler Middleware
- * Must be the last middleware added to Express
  */
+
 const errorHandler = (err, req, res, next) => {
-  let statusCode = err.statusCode || 500;
-  let message = err.message || 'Internal Server Error';
+  let error = { ...err };
+  error.message = err.message;
 
-  // Log error in non-production
+  // Log to console for dev
   if (process.env.NODE_ENV !== 'production') {
-    console.error(`[ERROR] ${req.method} ${req.path}:`, err);
+    console.error(err);
   }
 
-  // Mongoose CastError (invalid ObjectId)
+  // Mongoose bad ObjectId
   if (err.name === 'CastError') {
-    statusCode = 400;
-    message = `Invalid ${err.path}: ${err.value}`;
-  }
-
-  // Mongoose ValidationError
-  if (err.name === 'ValidationError') {
-    statusCode = 400;
-    message = Object.values(err.errors)
-      .map((e) => e.message)
-      .join('; ');
+    const message = `Resource not found. Invalid ID: ${err.value}`;
+    return res.status(404).json({ success: false, message });
   }
 
   // Mongoose duplicate key
   if (err.code === 11000) {
-    statusCode = 409;
-    const field = Object.keys(err.keyValue || {})[0] || 'field';
-    message = `${field.charAt(0).toUpperCase() + field.slice(1)} already in use.`;
+    const message = 'Duplicate field value entered';
+    return res.status(400).json({ success: false, message });
   }
 
-  // JWT errors
+  // Mongoose validation error
+  if (err.name === 'ValidationError') {
+    const message = Object.values(err.errors).map(val => val.message).join(', ');
+    return res.status(400).json({ success: false, message });
+  }
+
+  // JWT Errors
   if (err.name === 'JsonWebTokenError') {
-    statusCode = 401;
-    message = 'Invalid authentication token.';
+    return res.status(401).json({ success: false, message: 'Invalid token. Please log in again.' });
   }
-
+  
   if (err.name === 'TokenExpiredError') {
-    statusCode = 401;
-    message = 'Authentication token expired. Please login again.';
+    return res.status(401).json({ success: false, message: 'Token expired. Please log in again.' });
   }
 
-  // Multer file too large
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    statusCode = 413;
-    message = 'File size too large. Maximum allowed size is 5MB.';
-  }
-
-  res.status(statusCode).json({
+  res.status(error.statusCode || 500).json({
     success: false,
-    message,
-    ...(process.env.NODE_ENV === 'development' && {
-      stack: err.stack,
-      error: err,
-    }),
+    message: error.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 };
 
-/**
- * Not Found Handler
- */
-const notFound = (req, res, next) => {
-  const error = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
-  error.statusCode = 404;
-  next(error);
-};
-
-module.exports = { errorHandler, notFound };
+module.exports = { errorHandler };

@@ -1,203 +1,106 @@
-# Smart Local Government Platform — Nepal 🇳🇵
+# 🇳🇵 Smart Local Government Platform
+## स्मार्ट स्थानीय सरकार प्लेटफर्म
 
-A production-ready full-stack MERN application for Nepal's local government digital services.
+A full-stack web application designed for digitizing local government certificate services in Nepal. This platform streamlines the application, processing, and issuance of vital civic documents.
 
-## 🏗️ Tech Stack
+### Features
+- ✅ Online certificate applications (7 types including Birth, Marriage, Citizenship)
+- ✅ Secure document upload and management (Cloudinary integration)
+- ✅ Real-time application status tracking
+- ✅ Smart form validation & auto-fill suggestions
+- ✅ PDF certificate generation with embedded QR verification
+- ✅ Comprehensive Admin dashboard with analytics
+- ✅ Socket.io real-time live notifications & WebSockets updates
+- ✅ Role-based access control (Citizens vs. Admins)
 
-**Frontend:** React 18 + TypeScript + Vite 5 + TailwindCSS 3 + React Router v6  
-**Backend:** Node.js + Express.js + MongoDB (Mongoose) + JWT Auth
+### Tech Stack
+**Frontend:** 
+- React 18 + TypeScript + Vite
+- TailwindCSS for modern, premium styling
+- React Router DOM
+- Context API & Custom Hooks
+- Socket.io-client for WebSockets
 
----
+**Backend:** 
+- Node.js & Express.js
+- MongoDB & Mongoose
+- JSON Web Tokens (JWT) for Authentication
+- Socket.io for Real-time server pushing
+- Cloudinary (File Storage)
+- PDFKit (PDF Generation)
+- QRCode (Code generation)
 
-## 📁 Project Structure
+**Deployment & CI/CD:** 
+- Vercel (Frontend)
+- Render (Backend via Docker)
+- MongoDB Atlas (Database)
+- GitHub Actions (Automated CI/CD pipelines)
 
-```
-Smart Local Government Platform/
-├── backend/                 # Express REST API
-│   ├── server.js            # Main server entry
-│   ├── config/
-│   │   ├── db.js            # MongoDB connection
-│   │   └── cloudinary.js    # Cloudinary config
-│   ├── models/
-│   │   ├── User.js          # User schema
-│   │   ├── Application.js   # Application schema
-│   │   └── Certificate.js   # Certificate schema
-│   ├── middleware/
-│   │   ├── authMiddleware.js # JWT protect + adminOnly
-│   │   └── errorMiddleware.js
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   └── applicationController.js
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   └── applicationRoutes.js
-│   ├── .env                 # Local environment (DO NOT COMMIT)
-│   └── .env.example
-│
-└── frontend/                # React TypeScript SPA
-    ├── src/
-    │   ├── types/index.ts   # All TypeScript types
-    │   ├── context/AuthContext.tsx
-    │   ├── hooks/useAuth.ts
-    │   ├── services/api.ts  # Axios API layer
-    │   ├── components/common/
-    │   │   ├── Navbar.tsx
-    │   │   ├── Loader.tsx
-    │   │   ├── StatusBadge.tsx
-    │   │   ├── PrivateRoute.tsx
-    │   │   └── AdminRoute.tsx
-    │   ├── pages/
-    │   │   ├── Home.tsx
-    │   │   ├── Profile.tsx
-    │   │   ├── auth/Login.tsx
-    │   │   ├── auth/Register.tsx
-    │   │   ├── dashboard/UserDashboard.tsx
-    │   │   ├── dashboard/AdminDashboard.tsx
-    │   │   ├── applications/
-    │   │   │   ├── ApplyCertificate.tsx
-    │   │   │   ├── MyApplications.tsx
-    │   │   │   └── ApplicationDetail.tsx
-    │   │   ├── certificates/
-    │   │   │   ├── MyCertificates.tsx
-    │   │   │   └── VerifyCertificate.tsx
-    │   │   └── admin/
-    │   │       ├── AllApplications.tsx
-    │   │       ├── AdminApplicationDetail.tsx
-    │   │       └── ManageUsers.tsx
-    │   ├── App.tsx          # React Router setup
-    │   └── main.tsx         # Entry point
-    └── tailwind.config.js
-```
+### Quick Start
+Ensure you have Node.js 18+ and a MongoDB instance running.
 
----
-
-## 🚀 Getting Started
-
-### 1. Backend Setup
-
+#### 1. Setup Backend
 ```bash
 cd backend
-cp .env.example .env
-# Edit .env with your MongoDB URI and secrets
 npm install
-npm run dev
 ```
-
-The API will start at **http://localhost:5000**
-
-### 2. Frontend Setup
-
-```bash
-cd frontend
-cp .env.example .env
-# Ensure VITE_API_URL=http://localhost:5000/api
-npm install
-npm run dev
-```
-
-The frontend will start at **http://localhost:5173**
-
----
-
-## 🔐 Environment Variables
-
-### Backend (`backend/.env`)
-```
+Create a `.env` file in the `backend` directory:
+```env
 PORT=5000
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/smartgov
-JWT_SECRET=minimum_32_character_secret_key
+NODE_ENV=development
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_secret_key
+JWT_EXPIRE=30d
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 FRONTEND_URL=http://localhost:5173
-NODE_ENV=development
+```
+Run the backend:
+```bash
+npm run dev
 ```
 
-### Frontend (`frontend/.env`)
+#### 2. Setup Frontend
+```bash
+cd frontend
+npm install
 ```
+Create a `.env` file in the `frontend` directory:
+```env
 VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+```
+Run the frontend:
+```bash
+npm run dev
 ```
 
----
-
-## 📋 API Endpoints
-
-### Auth
-| Method | Endpoint | Access |
-|--------|----------|--------|
-| POST | `/api/auth/register` | Public |
-| POST | `/api/auth/login` | Public |
-| GET | `/api/auth/me` | Protected |
-| PUT | `/api/auth/update-profile` | Protected |
-| PUT | `/api/auth/change-password` | Protected |
-
-### Applications
-| Method | Endpoint | Access |
-|--------|----------|--------|
-| POST | `/api/applications` | User |
-| GET | `/api/applications` | User |
-| GET | `/api/applications/:id` | User |
-| PUT | `/api/applications/:id` | User |
-| DELETE | `/api/applications/:id` | User |
-
-### Admin
-| Method | Endpoint | Access |
-|--------|----------|--------|
-| GET | `/api/applications/admin/stats` | Admin |
-| GET | `/api/applications/admin/all-applications` | Admin |
-| PUT | `/api/applications/admin/applications/:id/approve` | Admin |
-| PUT | `/api/applications/admin/applications/:id/reject` | Admin |
-| GET | `/api/applications/admin/users` | Admin |
-
-### Certificates
-| Method | Endpoint | Access |
-|--------|----------|--------|
-| GET | `/api/applications/certificates/my` | User |
-| GET | `/api/applications/certificates/verify/:certNumber` | Public |
-
----
-
-## ✨ Features
-
-- 🔐 JWT Authentication with 7-day expiry
-- 📋 7 certificate types (birth, citizenship, residence, marriage, death, income, character)
-- 📊 Real-time application status tracking with visual timeline
-- 🤖 AI-ready smart form data field (`smartFormData`)
-- 🛡️ Role-based access control (User / Admin)
-- 📱 Fully responsive dark UI with glassmorphism design
-- 🔍 Public certificate verification by certificate number
-- 🇳🇵 Nepali language support (Devanagari font)
-- 🚦 Rate limiting (100 req/15 min global, 20 req/15 min auth)
-- ☁️ Cloudinary integration for document uploads
-- 📄 PDF certificate generation ready (pdfkit)
-- 🔐 QR code verification system
-
----
-
-## 🧑‍💻 Creating Admin User
-
-To create an admin user, register normally then update the role directly in MongoDB:
-```js
-db.users.updateOne({ email: "admin@smartgov.np" }, { $set: { role: "admin" } })
+### Folder Structure
+```
+├── backend/
+│   ├── config/          # DB & Service configurations
+│   ├── controllers/     # Express route handlers
+│   ├── middleware/      # Auth & Error handling
+│   ├── models/          # Mongoose schemas
+│   ├── routes/          # API route definitions
+│   ├── services/        # Business logic (PDF, Validation)
+│   └── utils/           # Helper functions
+└── frontend/
+    ├── public/
+    └── src/
+        ├── assets/      # Static assets
+        ├── components/  # Reusable React components (common, smart, user, admin)
+        ├── context/     # Global state
+        ├── hooks/       # Custom React hooks (useSocket, useNotifications)
+        ├── pages/       # Route-level components
+        ├── services/    # Axios API wrappers
+        ├── types/       # TypeScript interfaces
+        └── utils/       # Helpers and constants
 ```
 
+### Verification System
+Each generated PDF certificate includes a unique QR code. Scanning the QR code directs to a public `/verify/:certNumber` page which validates the certificate against the database in real-time, preventing forgery.
+
 ---
-
-## 🌐 Pages
-
-| Route | Description | Access |
-|-------|-------------|--------|
-| `/` | Landing page | Public |
-| `/login` | Login | Public |
-| `/register` | Register | Public |
-| `/verify/:certNumber` | Certificate verification | Public |
-| `/dashboard` | User dashboard | User |
-| `/apply` | Apply for certificate | User |
-| `/applications` | My applications | User |
-| `/applications/:id` | Application detail | User |
-| `/certificates` | My certificates | User |
-| `/profile` | Profile settings | User |
-| `/admin` | Admin dashboard | Admin |
-| `/admin/applications` | All applications | Admin |
-| `/admin/applications/:id` | Review application | Admin |
-| `/admin/users` | Manage users | Admin |
+*Built to empower citizens and digitize Nepal's local administrative services.*

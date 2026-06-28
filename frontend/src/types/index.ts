@@ -128,6 +128,52 @@ export interface DashboardStats {
   approved: number;
   rejected: number;
   thisMonth: number;
+  thisWeek?: number;
+  draft?: number;
+  approvedToday?: number;
+}
+
+export interface RecentActivity {
+  action: 'approved' | 'rejected';
+  applicationNumber: string;
+  certificateType: string;
+  adminName: string;
+  applicantName: string;
+  time: string;
+  reason?: string;
+}
+
+// ─── Smart Features & Phase 4 ─────────────────────────────────────────────────
+export interface Notification {
+  _id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'success' | 'warning' | 'info' | 'error';
+  relatedApplicationId?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  warnings: string[];
+  errors: string[];
+  addressScore: number;
+  documentCompleteness: {
+    isComplete: boolean;
+    missingDocuments: string[];
+    completionPercentage: number;
+  };
+  smartSuggestions: string[];
+}
+
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+export interface Toast {
+  id: string;
+  message: string;
+  type: ToastType;
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
