@@ -52,7 +52,7 @@ const ApplyCertificate: React.FC = () => {
     const fetchPrevious = async () => {
       try {
         const res = await applicationAPI.getAll();
-        if (res.data.success && res.data.data.applications.length > 0) {
+        if (res.data.success && res.data.data?.applications && res.data.data.applications.length > 0) {
           setPreviousAppDetails(res.data.data.applications[0].applicantDetails);
         }
       } catch (err) {}

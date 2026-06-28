@@ -113,7 +113,7 @@ const ApplyCertificate: React.FC = () => {
         const res = await applicationAPI.getAll({ limit: '5', status: 'approved' } as any);
         const apps = res.data.data?.applications ?? [];
         if (apps.length > 0) {
-          const ad = apps[0].applicantDetails as Record<string, string>;
+          const ad = apps[0].applicantDetails as unknown as Record<string, string>;
           const prev: Record<string, string> = {};
           Object.entries(ad || {}).forEach(([k, v]) => {
             if (v && typeof v === 'string') prev[k] = v;
@@ -138,12 +138,14 @@ const ApplyCertificate: React.FC = () => {
     setSubmitError('');
 
     try {
-      const res = await applicationAPI.create({
+      const payload = {
         certificateType: formState.certType,
         priority: formState.priority,
-        applicantDetails: formState.personalData as any,
+        applicantDetails: formState.personalData as unknown as Record<string, string>,
         status: 'pending',
-      });
+      };
+      
+      const res = await applicationAPI.create(payload as any);
 
       if (res.data.success && res.data.data?.application) {
         setSuccessAppNumber(res.data.data.application.applicationNumber);
