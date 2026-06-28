@@ -16,7 +16,7 @@ const getUserCertificates = async (req, res, next) => {
 // ─── 2. GET /api/certificates/:id/download ────────────────────────────────────
 const downloadCertificate = async (req, res, next) => {
   try {
-    const certificate = await Certificate.findById(req.params.id);
+    const certificate = await Certificate.findById(req.params.id).populate('applicationId');
 
     if (!certificate) {
       return res.status(404).json({ success: false, message: 'Certificate not found.' });
@@ -26,20 +26,28 @@ const downloadCertificate = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    if (!certificate.pdfUrl) {
-      return res.status(400).json({ success: false, message: 'PDF document not generated for this certificate yet.' });
-    }
+    // Generate PDF on the fly
+    const QRCode = require('qrcode');
+    const { generatePDF } = require('../services/certificateService');
+    
+    // Generate QR code buffer for the PDF
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const qrCodeData = `${frontendUrl}/verify/${certificate.certificateNumber}`;
+    const qrCodeBuffer = await QRCode.toBuffer(qrCodeData, {
+      width: 200,
+      margin: 1,
+      color: { dark: '#1e3a5f', light: '#ffffff' },
+      errorCorrectionLevel: 'H',
+    });
+
+    const pdfBuffer = await generatePDF(certificate.applicationId, certificate, qrCodeBuffer);
 
     certificate.downloadCount += 1;
     await certificate.save();
 
-    res.status(200).json({
-      success: true,
-      data: {
-        pdfUrl: certificate.pdfUrl,
-        certificateNumber: certificate.certificateNumber,
-      }
-    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${certificate.certificateNumber}.pdf`);
+    res.send(pdfBuffer);
   } catch (error) {
     next(error);
   }

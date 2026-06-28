@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import Loader from './Loader';
 
 const PrivateRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -16,6 +16,11 @@ const PrivateRoute: React.FC = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Admin users should not access user-only pages
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
   }
 
   return <Outlet />;

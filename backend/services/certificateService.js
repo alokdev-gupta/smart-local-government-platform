@@ -16,14 +16,16 @@ const TYPE_ABBREV = {
 
 // ─── Type Display Names ────────────────────────────────────────────────────────
 const TYPE_DISPLAY = {
-  birth: 'BIRTH CERTIFICATE / जन्म दर्ता प्रमाणपत्र',
-  citizenship: 'CITIZENSHIP CERTIFICATE / नागरिकता प्रमाणपत्र',
-  residence: 'RESIDENCE CERTIFICATE / बसोबास प्रमाणपत्र',
-  marriage: 'MARRIAGE CERTIFICATE / विवाह दर्ता प्रमाणपत्र',
-  death: 'DEATH CERTIFICATE / मृत्यु दर्ता प्रमाणपत्र',
-  income: 'INCOME CERTIFICATE / आय प्रमाणपत्र',
-  character: 'CHARACTER CERTIFICATE / चरित्र प्रमाणपत्र',
+  birth: 'BIRTH CERTIFICATE',
+  citizenship: 'CITIZENSHIP CERTIFICATE',
+  residence: 'RESIDENCE CERTIFICATE',
+  marriage: 'MARRIAGE CERTIFICATE',
+  death: 'DEATH CERTIFICATE',
+  income: 'INCOME CERTIFICATE',
+  character: 'CHARACTER CERTIFICATE',
 };
+
+const path = require('path');
 
 /**
  * Generate a PDF certificate buffer using PDFKit
@@ -34,6 +36,16 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
       size: 'A4',
       margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
+
+    const fontPath = path.join(__dirname, '../assets/Mukta-Regular.ttf');
+    const emblemPath = path.join(__dirname, '../../frontend/public/Emblem_of_Nepal.svg.png');
+
+    try {
+      doc.registerFont('Devanagari', fontPath);
+    } catch (e) {
+      console.warn('Devanagari font not found, falling back to Helvetica');
+      doc.registerFont('Devanagari', 'Helvetica');
+    }
 
     const chunks = [];
     doc.on('data', (chunk) => chunks.push(chunk));
@@ -56,53 +68,62 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
       .stroke();
 
     // ── Header Section ────────────────────────────────────────────────────────
-    doc.moveDown(0.5);
+    
+    // Nepal Emblem
+    try {
+      doc.image(emblemPath, doc.page.width / 2 - 35, 45, { width: 70 });
+    } catch (e) {
+      console.warn('Emblem not found');
+    }
 
-    // Nepal flag emoji alternative (red stripe block)
-    doc.rect(50, 55, pageWidth, 5)
-      .fillColor('#DC143C')
-      .fill();
-
-    doc.moveDown(1);
-
-    // Government of Nepal (Devanagari)
-    doc.font('Helvetica-Bold')
+    // Government of Nepal
+    doc.font('Devanagari')
       .fontSize(16)
       .fillColor('#1e3a5f')
-      .text('नेपाल सरकार / GOVERNMENT OF NEPAL', 50, 80, { align: 'center', width: pageWidth });
+      .text('नेपाल सरकार / GOVERNMENT OF NEPAL', 50, 125, { align: 'center', width: pageWidth });
 
-    doc.font('Helvetica')
+    doc.font('Devanagari')
       .fontSize(12)
       .fillColor('#374151')
-      .text('स्थानीय सरकार कार्यालय / LOCAL GOVERNMENT OFFICE', 50, 102, { align: 'center', width: pageWidth });
+      .text('स्थानीय सरकार कार्यालय / LOCAL GOVERNMENT OFFICE', 50, 145, { align: 'center', width: pageWidth });
 
     doc.font('Helvetica')
       .fontSize(10)
       .fillColor('#6b7280')
-      .text('Smart Gov Platform, Nepal', 50, 120, { align: 'center', width: pageWidth });
+      .text('Smart Gov Platform, Nepal', 50, 162, { align: 'center', width: pageWidth });
 
     // Separator line
-    doc.moveTo(50, 140).lineTo(doc.page.width - 50, 140)
+    doc.moveTo(50, 178).lineTo(doc.page.width - 50, 178)
       .lineWidth(2)
       .strokeColor('#2563eb')
       .stroke();
 
-    doc.moveTo(50, 143).lineTo(doc.page.width - 50, 143)
+    doc.moveTo(50, 181).lineTo(doc.page.width - 50, 181)
       .lineWidth(0.5)
       .strokeColor('#93c5fd')
       .stroke();
 
     // Certificate Type Title
-    doc.font('Helvetica-Bold')
+    const displayTitles = {
+      birth: 'BIRTH CERTIFICATE / जन्म दर्ता प्रमाणपत्र',
+      citizenship: 'CITIZENSHIP CERTIFICATE / नागरिकता प्रमाणपत्र',
+      residence: 'RESIDENCE CERTIFICATE / बसोबास प्रमाणपत्र',
+      marriage: 'MARRIAGE CERTIFICATE / विवाह दर्ता प्रमाणपत्र',
+      death: 'DEATH CERTIFICATE / मृत्यु दर्ता प्रमाणपत्र',
+      income: 'INCOME CERTIFICATE / आय प्रमाणपत्र',
+      character: 'CHARACTER CERTIFICATE / चरित्र प्रमाणपत्र',
+    };
+
+    doc.font('Devanagari')
       .fontSize(14)
       .fillColor('#1e3a5f')
-      .text(TYPE_DISPLAY[certType] || certType.toUpperCase(), 50, 155, {
+      .text(displayTitles[certType] || certType.toUpperCase(), 50, 195, {
         align: 'center',
         width: pageWidth,
       });
 
     // ── Certificate Number & Date (right-aligned) ─────────────────────────────
-    const certInfoY = 195;
+    const certInfoY = 230;
     doc.font('Helvetica')
       .fontSize(9)
       .fillColor('#6b7280')
@@ -124,21 +145,21 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
         50, certInfoY + 28, { align: 'right', width: pageWidth });
 
     // ── Certification Preamble ─────────────────────────────────────────────────
-    doc.font('Helvetica')
+    doc.font('Devanagari')
       .fontSize(10)
       .fillColor('#374151')
-      .text('This is to certify that the following individual has been duly registered with this office:', 50, 240, {
+      .text('This is to certify that the following individual has been duly registered with this office:', 50, 275, {
         align: 'center',
         width: pageWidth,
       });
 
     // ── Applicant Details Section ──────────────────────────────────────────────
-    const detailsStartY = 270;
+    const detailsStartY = 300;
     doc.rect(50, detailsStartY, pageWidth, 18)
       .fillColor('#1e3a5f')
       .fill();
 
-    doc.font('Helvetica-Bold')
+    doc.font('Devanagari')
       .fontSize(10)
       .fillColor('#ffffff')
       .text('APPLICANT INFORMATION / व्यक्तिगत विवरण', 55, detailsStartY + 4);
@@ -180,23 +201,23 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
       // Only advance Y after every 2 fields (or 1 for full-width)
       if (isFullWidth || idx % 2 === 0) {
         // Draw label
-        doc.font('Helvetica-Bold')
+        doc.font('Devanagari')
           .fontSize(8)
           .fillColor('#4b5563')
           .text(field.label + ':', xPos, fieldY + 4, { width: fieldWidth, lineBreak: false });
 
-        doc.font('Helvetica')
+        doc.font('Devanagari')
           .fontSize(9)
           .fillColor('#111827')
           .text(field.value, xPos, fieldY + 14, { width: fieldWidth, lineBreak: false });
       } else {
         // Right column
-        doc.font('Helvetica-Bold')
+        doc.font('Devanagari')
           .fontSize(8)
           .fillColor('#4b5563')
           .text(field.label + ':', xPos, fieldY + 4, { width: fieldWidth, lineBreak: false });
 
-        doc.font('Helvetica')
+        doc.font('Devanagari')
           .fontSize(9)
           .fillColor('#111827')
           .text(field.value, xPos, fieldY + 14, { width: fieldWidth, lineBreak: false });
@@ -229,7 +250,7 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
       .stroke();
 
     // Footer note (left)
-    doc.font('Helvetica')
+    doc.font('Devanagari')
       .fontSize(8)
       .fillColor('#6b7280')
       .text('यो प्रमाणपत्र सरकारी कार्यालयद्वारा जारी गरिएको हो।', 55, footerY + 10, { width: 250 });
@@ -247,7 +268,7 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
     // QR Code (right side of footer)
     if (qrCodeBuffer) {
       doc.image(qrCodeBuffer, doc.page.width - 135, footerY + 5, { width: 80, height: 80 });
-      doc.font('Helvetica')
+      doc.font('Devanagari')
         .fontSize(7)
         .fillColor('#6b7280')
         .text('Scan to verify / स्क्यान गर्नुहोस्', doc.page.width - 140, footerY + 88, { width: 90, align: 'center' });
@@ -260,15 +281,10 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
       .strokeColor('#374151')
       .stroke();
 
-    doc.font('Helvetica-Bold')
+    doc.font('Devanagari')
       .fontSize(9)
       .fillColor('#374151')
-      .text('अधिकृत हस्ताक्षर', 55, sigY + 34);
-
-    doc.font('Helvetica')
-      .fontSize(8)
-      .fillColor('#6b7280')
-      .text('Authorized Signature', 55, sigY + 46);
+      .text('अधिकृत हस्ताक्षर / Authorized Signature', 55, sigY + 34);
 
     // Official Stamp Placeholder Box
     doc.rect(220, sigY, 90, 60)
@@ -382,4 +398,4 @@ const generateCertificate = async (application) => {
   }
 };
 
-module.exports = { generateCertificate };
+module.exports = { generateCertificate, generatePDF };

@@ -60,6 +60,28 @@ const CertCard: React.FC<CertCardProps> = ({ cert, onQR }) => {
     (new Date(cert.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   );
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+      const res = await certificateAPI.download(cert._id);
+      const url = window.URL.createObjectURL(new Blob([res.data as any]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${cert.certificateNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed', error);
+      alert('Failed to download PDF. Please try again later.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className={`glass-card-dark p-6 border transition-all hover:-translate-y-0.5
                       ${status === 'valid' ? 'border-emerald-500/20' : 'border-red-500/20'}`}>
@@ -106,23 +128,13 @@ const CertCard: React.FC<CertCardProps> = ({ cert, onQR }) => {
 
       {/* Actions */}
       <div className="flex gap-2">
-        {cert.pdfUrl ? (
-          <a
-            href={cert.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 btn-secondary text-xs py-2.5 text-center"
-          >
-            ⬇️ Download PDF
-          </a>
-        ) : (
-          <button
-            disabled
-            className="flex-1 btn-ghost text-xs py-2.5 opacity-40 cursor-not-allowed"
-          >
-            PDF not available
-          </button>
-        )}
+        <button
+          onClick={handleDownload}
+          disabled={status !== 'valid' || isDownloading}
+          className={`flex-1 btn-secondary text-xs py-2.5 text-center ${(status !== 'valid' || isDownloading) ? 'opacity-40 cursor-not-allowed' : ''}`}
+        >
+          {isDownloading ? 'Downloading...' : '⬇️ Download PDF'}
+        </button>
         <button
           onClick={() => onQR(cert.certificateNumber)}
           className="btn-ghost text-xs py-2.5 px-3"

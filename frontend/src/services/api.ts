@@ -155,7 +155,7 @@ export const certificateAPI = {
     api.get<ApiResponse<{ certificates: Certificate[] }>>('/certificates'),
 
   download: (id: string) =>
-    api.get<ApiResponse<{ pdfUrl: string; certificateNumber: string }>>(`/certificates/${id}/download`),
+    api.get<Blob>(`/certificates/${id}/download`, { responseType: 'blob' }),
 
   verify: (certNumber: string) =>
     api.get<ApiResponse<{ certificateNumber?: string; holderName?: string; certificateType?: string; issuedDate?: string; expiryDate?: string; isValid: boolean; message?: string; revokedReason?: string }>>(

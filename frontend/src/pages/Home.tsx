@@ -64,14 +64,25 @@ const Home: React.FC = () => {
 
           <div className="flex flex-wrap gap-4 justify-center animate-slide-up" style={{ animationDelay: '0.2s' }}>
             {isAuthenticated ? (
-              <>
-                <Link to="/apply" className="btn-primary text-base px-8 py-4">
-                  🚀 Apply for Certificate
-                </Link>
-                <Link to="/dashboard" className="btn-outline text-base px-8 py-4">
-                  📊 My Dashboard
-                </Link>
-              </>
+              user?.role === 'admin' ? (
+                <>
+                  <Link to="/admin" className="btn-primary text-base px-8 py-4">
+                    🛡️ Admin Dashboard
+                  </Link>
+                  <Link to="/admin/applications" className="btn-outline text-base px-8 py-4">
+                    📋 Manage Applications
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/apply" className="btn-primary text-base px-8 py-4">
+                    🚀 Apply for Certificate
+                  </Link>
+                  <Link to="/dashboard" className="btn-outline text-base px-8 py-4">
+                    📊 My Dashboard
+                  </Link>
+                </>
+              )
             ) : (
               <>
                 <Link to="/register" className="btn-primary text-base px-8 py-4">
