@@ -49,7 +49,7 @@ export const CERTIFICATE_TYPES: CertInfo[] = [
     labelNepali: 'विवाह दर्ता',
     labelEnglish: 'Marriage Certificate',
     days: 5,
-    docs: ["Both parties' Citizenship", 'Witness Statements'],
+    docs: ["Both parties' Citizenship", 'Witness Statements', 'Groom Photo', 'Bride Photo'],
     color: 'from-pink-500/20 to-pink-600/10',
     border: 'border-pink-500/30',
   },

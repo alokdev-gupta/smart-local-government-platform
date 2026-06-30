@@ -8,6 +8,7 @@ import CertificateTypeSelector from '../../components/user/ApplicationForm/Certi
 import PersonalInfoForm from '../../components/user/ApplicationForm/PersonalInfoForm';
 import DocumentUploadZone, { type UploadedFile } from '../../components/user/ApplicationForm/DocumentUploadZone';
 import ApplicationReview from '../../components/user/ApplicationForm/ApplicationReview';
+import SpouseInfoForm from '../../components/user/ApplicationForm/SpouseInfoForm';
 import { AxiosError } from 'axios';
 
 // ─── State Types ─────────────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ interface FormState {
   certType: CertificateType | '';
   priority: 'normal' | 'urgent';
   personalData: Record<string, string>;
+  spouseData: Record<string, string>;
   files: UploadedFile[];
   confirmed: boolean;
 }
@@ -23,6 +25,7 @@ type FormAction =
   | { type: 'SET_CERT_TYPE'; payload: CertificateType }
   | { type: 'SET_PRIORITY'; payload: 'normal' | 'urgent' }
   | { type: 'SET_FIELD'; payload: { key: string; value: string } }
+  | { type: 'SET_SPOUSE_FIELD'; payload: { key: string; value: string } }
   | { type: 'ADD_FILE'; payload: UploadedFile }
   | { type: 'REMOVE_FILE'; payload: number }
   | { type: 'SET_CONFIRMED'; payload: boolean }
@@ -36,6 +39,8 @@ const formReducer = (state: FormState, action: FormAction): FormState => {
       return { ...state, priority: action.payload };
     case 'SET_FIELD':
       return { ...state, personalData: { ...state.personalData, [action.payload.key]: action.payload.value } };
+    case 'SET_SPOUSE_FIELD':
+      return { ...state, spouseData: { ...state.spouseData, [action.payload.key]: action.payload.value } };
     case 'ADD_FILE':
       return { ...state, files: [...state.files, action.payload] };
     case 'REMOVE_FILE':
@@ -96,6 +101,7 @@ const ApplyCertificate: React.FC = () => {
     certType: defaultType || '',
     priority: 'normal',
     personalData: {},
+    spouseData: {},
     files: [],
     confirmed: false,
   });
@@ -138,14 +144,18 @@ const ApplyCertificate: React.FC = () => {
     setSubmitError('');
 
     try {
-      const payload = {
+      const payload: any = {
         certificateType: formState.certType,
         priority: formState.priority,
-        applicantDetails: formState.personalData as unknown as Record<string, string>,
+        applicantDetails: formState.personalData,
         status: 'pending',
       };
       
-      const res = await applicationAPI.create(payload as any);
+      if (formState.certType === 'marriage') {
+        payload.spouseDetails = formState.spouseData;
+      }
+      
+      const res = await applicationAPI.create(payload);
 
       if (res.data.success && res.data.data?.application) {
         setSuccessAppNumber(res.data.data.application.applicationNumber);
@@ -158,6 +168,22 @@ const ApplyCertificate: React.FC = () => {
     }
   };
 
+  const isMarriage = formState.certType === 'marriage';
+  const steps = isMarriage ? [
+    { number: 1, label: 'Certificate Type', icon: '📋' },
+    { number: 2, label: 'Personal Info', icon: '👤' },
+    { number: 3, label: 'Spouse Info', icon: '👩‍❤️‍👨' },
+    { number: 4, label: 'Documents', icon: '📎' },
+    { number: 5, label: 'Review', icon: '✅' },
+  ] : [
+    { number: 1, label: 'Certificate Type', icon: '📋' },
+    { number: 2, label: 'Personal Info', icon: '👤' },
+    { number: 3, label: 'Documents', icon: '📎' },
+    { number: 4, label: 'Review', icon: '✅' },
+  ];
+
+  const totalSteps = steps.length;
+
   const canGoNext = (): boolean => {
     switch (step) {
       case 1: return formState.certType !== '';
@@ -165,8 +191,21 @@ const ApplyCertificate: React.FC = () => {
         const pd = formState.personalData;
         return !!(pd.fullName?.trim() && pd.province && pd.districtName?.trim() && pd.municipalityName?.trim());
       }
-      case 3: return formState.files.length > 0;
-      case 4: return formState.confirmed;
+      case 3: {
+        if (isMarriage) {
+          const sd = formState.spouseData;
+          return !!(sd.fullName?.trim() && sd.province && sd.districtName?.trim() && sd.municipalityName?.trim());
+        }
+        return formState.files.length > 0;
+      }
+      case 4: {
+        if (isMarriage) return formState.files.length > 0;
+        return formState.confirmed;
+      }
+      case 5: {
+        if (isMarriage) return formState.confirmed;
+        return false;
+      }
       default: return false;
     }
   };
@@ -191,7 +230,7 @@ const ApplyCertificate: React.FC = () => {
         </div>
 
         {/* Step Indicator */}
-        <StepIndicator currentStep={step} steps={STEPS} />
+        <StepIndicator currentStep={step} steps={steps} />
 
         {/* Priority toggle (shown on step 1 & 2) */}
         {(step === 1 || step === 2) && (
@@ -234,7 +273,14 @@ const ApplyCertificate: React.FC = () => {
             />
           )}
 
-          {step === 3 && formState.certType && (
+          {step === 3 && isMarriage && formState.certType && (
+            <SpouseInfoForm
+              data={formState.spouseData}
+              onChange={(key, value) => dispatch({ type: 'SET_SPOUSE_FIELD', payload: { key, value } })}
+            />
+          )}
+
+          {((step === 3 && !isMarriage) || (step === 4 && isMarriage)) && formState.certType && (
             <DocumentUploadZone
               certType={formState.certType}
               files={formState.files}
@@ -243,7 +289,7 @@ const ApplyCertificate: React.FC = () => {
             />
           )}
 
-          {step === 4 && formState.certType && (
+          {((step === 4 && !isMarriage) || (step === 5 && isMarriage)) && formState.certType && (
             <ApplicationReview
               certType={formState.certType}
               priority={formState.priority}
@@ -275,10 +321,10 @@ const ApplyCertificate: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-2">
-            <span className="text-slate-500 text-sm">{step} / {STEPS.length}</span>
+            <span className="text-slate-500 text-sm">{step} / {totalSteps}</span>
           </div>
 
-          {step < 4 ? (
+          {step < totalSteps ? (
             <button
               onClick={() => setStep((s) => s + 1)}
               disabled={!canGoNext()}

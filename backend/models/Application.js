@@ -82,6 +82,7 @@ const applicationSchema = new mongoose.Schema(
       default: 'normal',
     },
     applicantDetails: applicantDetailsSchema,
+    spouseDetails: applicantDetailsSchema, // Reuse the same schema for spouse
     uploadedDocuments: [uploadedDocumentSchema],
     adminRemarks: {
       type: String,

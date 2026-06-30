@@ -60,9 +60,10 @@ export interface ApplicantDetails {
     | 'Bagmati'
     | 'Gandaki'
     | 'Lumbini'
-    | 'Karnali'
     | 'Sudurpashchim';
 }
+
+export type SpouseDetails = ApplicantDetails;
 
 export interface UploadedDocument {
   documentType: string;
@@ -81,6 +82,7 @@ export interface Application {
   status: ApplicationStatus;
   priority: 'normal' | 'urgent';
   applicantDetails: ApplicantDetails;
+  spouseDetails?: SpouseDetails;
   uploadedDocuments: UploadedDocument[];
   adminRemarks?: string;
   rejectionReason?: string;

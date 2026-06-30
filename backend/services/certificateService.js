@@ -98,17 +98,9 @@ const generateDefaultPDF = (doc, application, certificate, qrCodeBuffer, pageWid
 };
 
 // ─── Marriage Certificate Generator (EXACT MATCH PDF 1) ──────────────────────
-const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWidth, emblemPath) => {
+const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWidth, emblemPath, photos) => {
   const ad = application.applicantDetails || {};
-  // Attempt to use spouse data from smartFormData or fallback to dummy data for demonstration
-  const spouse = application.spouseDetails || application.smartFormData?.spouseDetails || {
-    fullName: 'Anjali Yadav',
-    dateOfBirth: '2006-05-15',
-    permanentAddress: 'Bahudarmai-05',
-    fatherName: 'Ram Prasad Yadav',
-    motherName: 'Sita Devi',
-    grandfatherName: 'Hari Prasad Yadav',
-  };
+  const spouse = application.spouseDetails || {};
 
   doc.font('Devanagari').fontSize(10).fillColor('#000').text('अनुसूची-२२', 0, 30, { align: 'center', width: doc.page.width });
   doc.fontSize(9).text('(नियम २० को उपनियम (१) को खण्ड (ग) सँग सम्बन्धित)', 0, 42, { align: 'center', width: doc.page.width });
@@ -139,8 +131,11 @@ const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWi
 
   // Photo boxes
   doc.rect(doc.page.width - 200, 185, 70, 80).lineWidth(1).strokeColor('#000').stroke();
+  try { if (photos?.groomPhotoBuffer) doc.image(photos.groomPhotoBuffer, doc.page.width - 200, 185, { width: 70, height: 80 }); } catch(e) {}
   doc.fontSize(8).text('दुलाहा (Groom)', doc.page.width - 200, 270, { width: 70, align: 'center' });
+  
   doc.rect(doc.page.width - 120, 185, 70, 80).stroke();
+  try { if (photos?.bridePhotoBuffer) doc.image(photos.bridePhotoBuffer, doc.page.width - 120, 185, { width: 70, height: 80 }); } catch(e) {}
   doc.text('दुलही (Bride)', doc.page.width - 120, 270, { width: 70, align: 'center' });
 
   // Table
@@ -386,6 +381,32 @@ const generateCitizenshipPDF = (doc, application, certificate, qrCodeBuffer, pag
 
 // ─── Main Generator ───────────────────────────────────────────────────────────
 const generatePDF = async (application, certificate, qrCodeBuffer) => {
+  let groomPhotoBuffer = null;
+  let bridePhotoBuffer = null;
+
+  if (application.certificateType === 'marriage' && application.uploadedDocuments) {
+    const fetchImage = async (docType) => {
+      const doc = application.uploadedDocuments.find((d) => d.documentType === docType);
+      if (doc && doc.cloudinaryUrl) {
+        try {
+          // If native fetch is available (Node 18+)
+          if (typeof fetch !== 'undefined') {
+            const res = await fetch(doc.cloudinaryUrl);
+            if (res.ok) {
+              const arr = await res.arrayBuffer();
+              return Buffer.from(arr);
+            }
+          }
+        } catch (e) {
+          console.warn(`Failed to fetch photo for ${docType}:`, e.message);
+        }
+      }
+      return null;
+    };
+    groomPhotoBuffer = await fetchImage('Groom Photo');
+    bridePhotoBuffer = await fetchImage('Bride Photo');
+  }
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margins: { top: 30, bottom: 30, left: 40, right: 40 } });
 
@@ -405,7 +426,7 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
     if (application.certificateType === 'citizenship') {
       generateCitizenshipPDF(doc, application, certificate, qrCodeBuffer, pageWidth, emblemPath);
     } else if (application.certificateType === 'marriage') {
-      generateMarriagePDF(doc, application, certificate, qrCodeBuffer, pageWidth, emblemPath);
+      generateMarriagePDF(doc, application, certificate, qrCodeBuffer, pageWidth, emblemPath, { groomPhotoBuffer, bridePhotoBuffer });
     } else if (application.certificateType === 'birth') {
       generateBirthPDF(doc, application, certificate, qrCodeBuffer, pageWidth, emblemPath);
     } else {
