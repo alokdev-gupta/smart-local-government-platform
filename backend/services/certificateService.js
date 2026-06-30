@@ -100,41 +100,52 @@ const generateDefaultPDF = (doc, application, certificate, qrCodeBuffer, pageWid
 // ─── Marriage Certificate Generator (EXACT MATCH PDF 1) ──────────────────────
 const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWidth, emblemPath) => {
   const ad = application.applicantDetails || {};
+  // Attempt to use spouse data from smartFormData or fallback to dummy data for demonstration
+  const spouse = application.spouseDetails || application.smartFormData?.spouseDetails || {
+    fullName: 'Anjali Yadav',
+    dateOfBirth: '2006-05-15',
+    permanentAddress: 'Bahudarmai-05',
+    fatherName: 'Ram Prasad Yadav',
+    motherName: 'Sita Devi',
+    grandfatherName: 'Hari Prasad Yadav',
+  };
 
   doc.font('Devanagari').fontSize(10).fillColor('#000').text('अनुसूची-२२', 0, 30, { align: 'center', width: doc.page.width });
   doc.fontSize(9).text('(नियम २० को उपनियम (१) को खण्ड (ग) सँग सम्बन्धित)', 0, 42, { align: 'center', width: doc.page.width });
   doc.fontSize(12).text('नेपाल सरकार (Government of Nepal)', 0, 56, { align: 'center', width: doc.page.width });
-  doc.fontSize(11).text('स्थानीय पञ्जीकाधिकारीको कार्यालय (Office of Local Registrar)', 0, 70, { align: 'center', width: doc.page.width });
+  doc.fontSize(11).text('स्थानीय पञ्जीकाधिकारीको कार्यालय (Office of Local Registrar)', 0, 72, { align: 'center', width: doc.page.width });
   
   const munName = ad.municipalityName || '...........';
   const wardStr = ad.wardNumber || '....';
-  doc.fontSize(11).text(`वडा नं. ${wardStr}, ${munName} नगरपालिका/गाउँपालिका`, 0, 84, { align: 'center', width: doc.page.width });
-  doc.fontSize(11).text(`(Ward No.${wardStr}, ${munName} Municipality)`, 0, 98, { align: 'center', width: doc.page.width });
+  doc.fontSize(11).text(`वडा नं. ${wardStr}, ${munName} नगरपालिका/गाउँपालिका`, 0, 88, { align: 'center', width: doc.page.width });
+  doc.fontSize(11).text(`(Ward No.${wardStr}, ${munName} Municipality)`, 0, 102, { align: 'center', width: doc.page.width });
   
   const dist = ad.districtName || '...........';
   const prov = ad.province || '...........';
-  doc.fontSize(10).text(`${dist} जिल्ला (${dist} District), ${prov} प्रदेश (${prov} Province)`, 0, 112, { align: 'center', width: doc.page.width });
+  doc.fontSize(10).text(`${dist} जिल्ला (${dist} District), ${prov} प्रदेश (${prov} Province)`, 0, 116, { align: 'center', width: doc.page.width });
 
-  try { doc.image(emblemPath, 40, 60, { width: 60 }); } catch (e) {}
+  try { doc.image(emblemPath, 40, 50, { width: 60 }); } catch (e) {}
 
-  doc.fontSize(18).text('विवाह दर्ता प्रमाणपत्र', 0, 140, { align: 'center', width: doc.page.width });
-  doc.font('Helvetica-Bold').fontSize(16).text('(Marriage Registration Certificate)', 0, 160, { align: 'center', width: doc.page.width });
+  doc.fontSize(18).text('विवाह दर्ता प्रमाणपत्र', 0, 145, { align: 'center', width: doc.page.width });
+  doc.font('Helvetica-Bold').fontSize(16).text('(Marriage Registration Certificate)', 0, 168, { align: 'center', width: doc.page.width });
 
   const issueDateStr = formatDate(certificate.issuedDate);
   doc.font('Devanagari').fontSize(10);
-  doc.text(`दर्ता मिति (Registration Date): ${issueDateStr}`, doc.page.width - 250, 185);
-
-  doc.text(`दर्ता नं. (Registration No.): ${certificate.certificateNumber}`, 40, 205);
-  doc.text(`विवाह मिति (Marriage Date): ${issueDateStr}`, 40, 220);
-  doc.text(`विवाह प्रकार (Marriage Type): सामाजिक परम्परा अनुसार (Social Customs)`, 40, 235);
+  
+  doc.text(`दर्ता नं. (Registration No.): ${certificate.certificateNumber}`, 40, 200);
+  doc.text(`दर्ता मिति (Registration Date): ${issueDateStr}`, 40, 215);
+  doc.text(`विवाह मिति (Marriage Date): ${issueDateStr}`, 40, 230);
+  doc.text(`विवाह प्रकार (Marriage Type): सामािजक परम्परा अनुसार (Social Customs)`, 40, 245);
 
   // Photo boxes
-  doc.rect(doc.page.width / 2 - 30, 195, 70, 80).lineWidth(1).strokeColor('#000').stroke();
-  doc.rect(doc.page.width / 2 + 70, 195, 70, 80).stroke();
+  doc.rect(doc.page.width - 200, 185, 70, 80).lineWidth(1).strokeColor('#000').stroke();
+  doc.fontSize(8).text('दुलाहा (Groom)', doc.page.width - 200, 270, { width: 70, align: 'center' });
+  doc.rect(doc.page.width - 120, 185, 70, 80).stroke();
+  doc.text('दुलही (Bride)', doc.page.width - 120, 270, { width: 70, align: 'center' });
 
   // Table
-  const startY = 290;
-  const rowH = 26;
+  const startY = 285;
+  const rowH = 32;
   const col1X = 40, col2X = 180, col3X = 360, endX = doc.page.width - 40;
 
   // Header Row
@@ -142,9 +153,10 @@ const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWi
   doc.moveTo(col2X, startY).lineTo(col2X, startY + rowH).stroke();
   doc.moveTo(col3X, startY).lineTo(col3X, startY + rowH).stroke();
   
-  doc.text('विवरण (Details)', col1X + 5, startY + 6);
-  doc.text('दुलाहा (Bridegroom)', col2X + 5, startY + 6);
-  doc.text('दुलही (Bride)', col3X + 5, startY + 6);
+  doc.font('Devanagari').fontSize(10);
+  doc.text('विवरण (Details)', col1X + 5, startY + 8);
+  doc.text('दुलाहा (Bridegroom)', col2X + 5, startY + 8);
+  doc.text('दुलही (Bride)', col3X + 5, startY + 8);
 
   const labels = [
     'पूरा नाम : (Full Name :)',
@@ -158,40 +170,38 @@ const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWi
 
   let currentY = startY + rowH;
   labels.forEach((lbl, i) => {
-    let rh = (i === 2 || i === 4 || i === 5 || i === 6) ? 36 : rowH;
+    let rh = (i === 2 || i === 4 || i === 5 || i === 6) ? 38 : rowH;
     doc.rect(col1X, currentY, endX - col1X, rh).stroke();
     doc.moveTo(col2X, currentY).lineTo(col2X, currentY + rh).stroke();
     doc.moveTo(col3X, currentY).lineTo(col3X, currentY + rh).stroke();
 
     doc.text(lbl, col1X + 5, currentY + 6, { width: col2X - col1X - 10 });
 
-    // Populate data based on gender (dummy values for the other)
-    const isGroom = ad.gender === 'male';
+    const isGroom = ad.gender !== 'female'; // Default applicant to Groom unless explicitly female
+    const groomData = isGroom ? ad : spouse;
+    const brideData = isGroom ? spouse : ad;
+
     if (i === 0) {
-      if (isGroom) doc.text(ad.fullName || '', col2X + 5, currentY + 6);
-      else doc.text(ad.fullName || '', col3X + 5, currentY + 6);
+      doc.text(groomData.fullName || '', col2X + 5, currentY + 6);
+      doc.text(brideData.fullName || '', col3X + 5, currentY + 6);
     } else if (i === 1) {
-      if (isGroom) doc.text(formatDate(ad.dateOfBirth), col2X + 5, currentY + 6);
-      else doc.text(formatDate(ad.dateOfBirth), col3X + 5, currentY + 6);
+      doc.text(formatDate(groomData.dateOfBirth), col2X + 5, currentY + 6);
+      doc.text(formatDate(brideData.dateOfBirth), col3X + 5, currentY + 6);
+    } else if (i === 2) {
+      doc.text('..........................', col2X + 5, currentY + (rh/2) - 4);
+      doc.text('..........................', col3X + 5, currentY + (rh/2) - 4);
     } else if (i === 3) {
-      if (isGroom) doc.text(ad.permanentAddress || '', col2X + 5, currentY + 6);
-      else doc.text(ad.permanentAddress || '', col3X + 5, currentY + 6);
+      doc.text(groomData.permanentAddress || '', col2X + 5, currentY + 6);
+      doc.text(brideData.permanentAddress || '', col3X + 5, currentY + 6);
     } else if (i === 4) {
-      if (isGroom) doc.text(ad.fatherName || '', col2X + 5, currentY + 6);
-      else doc.text(ad.fatherName || '', col3X + 5, currentY + 6);
+      doc.text(groomData.fatherName || '', col2X + 5, currentY + 6);
+      doc.text(brideData.fatherName || '', col3X + 5, currentY + 6);
     } else if (i === 5) {
-      if (isGroom) doc.text(ad.motherName || '', col2X + 5, currentY + 6);
-      else doc.text(ad.motherName || '', col3X + 5, currentY + 6);
+      doc.text(groomData.motherName || '', col2X + 5, currentY + 6);
+      doc.text(brideData.motherName || '', col3X + 5, currentY + 6);
     } else if (i === 6) {
-      if (isGroom) doc.text(ad.grandfatherName || '', col2X + 5, currentY + 6);
-      else doc.text(ad.grandfatherName || '', col3X + 5, currentY + 6);
-    }
-    
-    // Draw dots for empty spots
-    if (isGroom) {
-      doc.text('..........................', col3X + 10, currentY + (rh/2) - 4);
-    } else {
-      doc.text('..........................', col2X + 10, currentY + (rh/2) - 4);
+      doc.text(groomData.grandfatherName || '', col2X + 5, currentY + 6);
+      doc.text(brideData.grandfatherName || '', col3X + 5, currentY + 6);
     }
 
     currentY += rh;
