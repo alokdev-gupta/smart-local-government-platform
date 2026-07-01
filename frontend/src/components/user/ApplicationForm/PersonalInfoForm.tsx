@@ -27,6 +27,7 @@ interface FieldConfig {
 const COMMON_FIELDS: FieldConfig[] = [
   { key: 'fullName',        label: 'Full Name',          labelNepali: 'पूरा नाम',       placeholder: 'Ram Bahadur Thapa', required: true },
   { key: 'dateOfBirth',     label: 'Date of Birth',      labelNepali: 'जन्म मिति',      type: 'date', required: true },
+  { key: 'citizenshipNumber',label: 'Citizenship/Passport No.', labelNepali: 'नागरिकता/राहदानी नं.', placeholder: '123-456-789' },
   { key: 'gender',          label: 'Gender',             labelNepali: 'लिङ्ग',          type: 'select', options: ['male', 'female', 'other'], required: true },
   { key: 'fatherName',      label: "Father's Name",      labelNepali: 'बुवाको नाम',     placeholder: "Father's full name" },
   { key: 'motherName',      label: "Mother's Name",      labelNepali: 'आमाको नाम',     placeholder: "Mother's full name" },

@@ -6,4 +6,16 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Helper to upload a buffer to Cloudinary
+const uploadToCloudinary = (buffer, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    });
+    stream.end(buffer);
+  });
+};
+
 module.exports = cloudinary;
+module.exports.uploadToCloudinary = uploadToCloudinary;

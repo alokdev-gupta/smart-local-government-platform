@@ -144,20 +144,38 @@ const ApplyCertificate: React.FC = () => {
     setSubmitError('');
 
     try {
+      const cleanData = (data: Record<string, string>) => {
+        const cleaned = { ...data };
+        if (!cleaned.dateOfBirth) delete cleaned.dateOfBirth;
+        return cleaned;
+      };
+
       const payload: any = {
         certificateType: formState.certType,
         priority: formState.priority,
-        applicantDetails: formState.personalData,
+        applicantDetails: cleanData(formState.personalData),
         status: 'pending',
       };
       
       if (formState.certType === 'marriage') {
-        payload.spouseDetails = formState.spouseData;
+        payload.spouseDetails = cleanData(formState.spouseData);
       }
       
       const res = await applicationAPI.create(payload);
 
       if (res.data.success && res.data.data?.application) {
+        const appId = res.data.data.application._id;
+        
+        if (formState.files.length > 0) {
+          const uploadPromises = formState.files.map((f) => {
+            const fd = new FormData();
+            fd.append('document', f.file);
+            fd.append('documentType', f.documentType);
+            return applicationAPI.uploadDocument(appId, fd);
+          });
+          await Promise.all(uploadPromises);
+        }
+
         setSuccessAppNumber(res.data.data.application.applicationNumber);
       }
     } catch (err) {

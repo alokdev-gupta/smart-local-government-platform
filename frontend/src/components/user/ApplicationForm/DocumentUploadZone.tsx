@@ -63,15 +63,19 @@ const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      const files = e.dataTransfer.files;
+      if (files) {
+        Array.from(files).forEach((file) => handleFile(file));
+      }
     },
     [handleFile]
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFile(file);
+    const files = e.target.files;
+    if (files) {
+      Array.from(files).forEach((file) => handleFile(file));
+    }
     e.target.value = '';
   };
 
@@ -154,6 +158,7 @@ const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({
         id="doc-file-input"
         type="file"
         accept=".jpg,.jpeg,.png,.pdf"
+        multiple
         onChange={handleInputChange}
         className="hidden"
         disabled={!selectedDocType}

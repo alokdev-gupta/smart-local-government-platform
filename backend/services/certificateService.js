@@ -3,6 +3,7 @@ const QRCode = require('qrcode');
 const Certificate = require('../models/Certificate');
 const { uploadToCloudinary } = require('../config/cloudinary');
 const path = require('path');
+const fs = require('fs');
 
 const TYPE_ABBREV = {
   birth: 'BIRTH',
@@ -157,7 +158,7 @@ const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWi
     'पूरा नाम : (Full Name :)',
     'जन्म मिति : (Date of Birth :)',
     'नागरिकता/राहदानी नं. :\n(Citizenship/Passport No. :)',
-    'स्थायी ठेगाना : (Permanent Address :)',
+    'स्थायी ठेगाना :\n(Permanent Address :)',
     'बाबुको पूरा नाम :\n(Full Name of Father :)',
     'आमाको पूरा नाम :\n(Full Name of Mother :)',
     'बाजेको पूरा नाम :\n(Full Name of Grandfather :)'
@@ -183,8 +184,8 @@ const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWi
       doc.text(formatDate(groomData.dateOfBirth), col2X + 5, currentY + 6);
       doc.text(formatDate(brideData.dateOfBirth), col3X + 5, currentY + 6);
     } else if (i === 2) {
-      doc.text('..........................', col2X + 5, currentY + (rh/2) - 4);
-      doc.text('..........................', col3X + 5, currentY + (rh/2) - 4);
+      doc.text(groomData.citizenshipNumber || '..........................', col2X + 5, currentY + (rh/2) - 4);
+      doc.text(brideData.citizenshipNumber || '..........................', col3X + 5, currentY + (rh/2) - 4);
     } else if (i === 3) {
       doc.text(groomData.permanentAddress || '', col2X + 5, currentY + 6);
       doc.text(brideData.permanentAddress || '', col3X + 5, currentY + 6);
@@ -205,13 +206,36 @@ const generateMarriagePDF = (doc, application, certificate, qrCodeBuffer, pageWi
   // Footer
   currentY += 40;
   doc.text('सही (Signature):', 40, currentY);
+  
+  // Draw Signature
+  doc.font('Helvetica-Oblique').fontSize(16).fillColor('#000080');
+  doc.text('Biswobandu', 100, currentY - 5);
+  doc.fillColor('#000').font('Devanagari').fontSize(10);
+  
   doc.text('स्थानीय पञ्जीकाधिकारीको नाम:', 40, currentY + 20);
   doc.text('Name of Local Registrar:', 40, currentY + 35);
-  doc.text('Local Registrar', 160, currentY + 35);
+  doc.text('Biswobandu Neupane', 160, currentY + 35); // Update name here too
 
   doc.rect(doc.page.width - 150, currentY, 110, 80).strokeColor('#000').dash(2, { space: 2 }).stroke();
   doc.undash();
-  doc.text('कार्यालयको छाप / Official Stamp', doc.page.width - 145, currentY + 35, { width: 100, align: 'center' });
+  doc.text('कार्यालयको छाप / Official Stamp', doc.page.width - 145, currentY + 65, { width: 100, align: 'center' });
+
+  // Draw Official Red Stamp
+  doc.save();
+  doc.translate(doc.page.width - 95, currentY + 40);
+  doc.circle(0, 0, 35).lineWidth(2).strokeColor('red').stroke();
+  doc.circle(0, 0, 33).lineWidth(1).strokeColor('red').stroke();
+  doc.fillColor('red').fontSize(8).text('नगर कार्यपालिकाको कार्यालय', -30, -15, { width: 60, align: 'center' });
+  doc.text('मिक्लाजुङ, मोरङ', -30, 5, { width: 60, align: 'center' });
+  
+  // Add a cross signature over the stamp
+  doc.font('Helvetica-Oblique').fontSize(12).fillColor('#000080');
+  doc.text('Biswobandu', -25, -5, { width: 60, align: 'center', angle: -15 });
+  
+  doc.restore();
+  
+  // Restore default colors
+  doc.fillColor('#000').font('Devanagari').fontSize(10);
 };
 
 // ─── Birth Certificate Generator (EXACT MATCH PDF 2) ──────────────────────────
@@ -387,18 +411,16 @@ const generatePDF = async (application, certificate, qrCodeBuffer) => {
   if (application.certificateType === 'marriage' && application.uploadedDocuments) {
     const fetchImage = async (docType) => {
       const doc = application.uploadedDocuments.find((d) => d.documentType === docType);
-      if (doc && doc.cloudinaryUrl) {
+      if (doc && doc.publicId) {
         try {
-          // If native fetch is available (Node 18+)
-          if (typeof fetch !== 'undefined') {
-            const res = await fetch(doc.cloudinaryUrl);
-            if (res.ok) {
-              const arr = await res.arrayBuffer();
-              return Buffer.from(arr);
-            }
+          const filePath = path.join(__dirname, '../uploads', doc.publicId);
+          if (fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath);
+          } else {
+            console.warn(`File not found on disk: ${filePath}`);
           }
         } catch (e) {
-          console.warn(`Failed to fetch photo for ${docType}:`, e.message);
+          console.warn(`Failed to read photo for ${docType}:`, e.message);
         }
       }
       return null;

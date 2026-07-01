@@ -22,6 +22,7 @@ const uploadedDocumentSchema = new mongoose.Schema(
 const applicantDetailsSchema = new mongoose.Schema(
   {
     fullName: { type: String, required: true, trim: true },
+    citizenshipNumber: { type: String, trim: true },
     dateOfBirth: { type: Date },
     gender: { type: String, enum: ['male', 'female', 'other'] },
     fatherName: { type: String, trim: true },

@@ -45,6 +45,7 @@ export interface AuthState {
 export interface ApplicantDetails {
   fullName: string;
   dateOfBirth?: string;
+  citizenshipNumber?: string;
   gender?: 'male' | 'female' | 'other';
   fatherName?: string;
   motherName?: string;

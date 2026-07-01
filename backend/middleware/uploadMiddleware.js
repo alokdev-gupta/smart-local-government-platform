@@ -1,34 +1,25 @@
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const path = require('path');
+const fs = require('fs');
 
-// ─── Cloudinary Config ─────────────────────────────────────────────────────
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
-});
+// ─── Local Storage Engine ───────────────────────────────────────────────────
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-// ─── Cloudinary Storage Engine ─────────────────────────────────────────────
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: (req, file) => {
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
     const userId = req.user?._id || 'anonymous';
     const timestamp = Date.now();
     const baseName = path.basename(file.originalname, path.extname(file.originalname))
       .replace(/[^a-zA-Z0-9]/g, '-')
       .substring(0, 40);
-
-    return {
-      folder: 'smartgov/documents',
-      public_id: `${userId}-${timestamp}-${baseName}`,
-      allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
-      resource_type: 'auto',
-      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
-    };
-  },
+    cb(null, `${userId}-${timestamp}-${baseName}${path.extname(file.originalname)}`);
+  }
 });
 
 // ─── File Filter ───────────────────────────────────────────────────────────
@@ -75,5 +66,4 @@ const handleUpload = (uploadFn) => (req, res, next) => {
 module.exports = {
   uploadSingle: handleUpload(upload.single('document')),
   uploadMultiple: handleUpload(upload.array('documents', 5)),
-  cloudinary,
 };

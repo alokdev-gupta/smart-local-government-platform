@@ -14,7 +14,7 @@ const generateAppNumber = async () => {
 // ─── 1. POST /api/applications ────────────────────────────────────────────────
 const createApplication = async (req, res, next) => {
   try {
-    const { certificateType, priority, applicantDetails, smartFormData } = req.body;
+    const { certificateType, priority, applicantDetails, spouseDetails, smartFormData } = req.body;
 
     if (!certificateType) {
       return res.status(400).json({ success: false, message: 'Certificate type is required.' });
@@ -33,6 +33,7 @@ const createApplication = async (req, res, next) => {
       priority: priority || 'normal',
       status: 'pending',
       applicantDetails: applicantDetails || {},
+      spouseDetails: spouseDetails || undefined,
       smartFormData: smartFormData || null,
       estimatedCompletionDate: estimated,
     });
@@ -210,9 +211,11 @@ const uploadDocument = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'documentType is required.' });
     }
 
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
     application.uploadedDocuments.push({
       documentType,
-      cloudinaryUrl: req.file.path,
+      cloudinaryUrl: fileUrl,
       publicId: req.file.filename,
       fileName: req.file.originalname,
       fileSize: req.file.size,
